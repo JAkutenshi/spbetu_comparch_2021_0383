@@ -1,0 +1,144 @@
+Microsoft (R) Macro Assembler Version 5.10                  11/23/21 15:58:5
+                                                             Page     1-1
+
+
+				; Стек  программы
+ 0000				AStack SEGMENT  STACK
+ 0000  000C[			    DW 12 DUP(?)
+	   ????			
+			 ]	
+				
+ 0018				AStack  ENDS
+				;Данные программы
+ 0000				DATA      SEGMENT
+				;Директивы описания данны
+				х
+ 0000  0002			a      DW    2
+ 0002  0001			b      DW    1
+ 0004  0003			i      DW    3
+ 0006  0000			k      DW    0
+ 0008  0000			i1     DW    0
+ 000A  0000			i2     DW    0
+				
+ 000C				DATA      ENDS
+				
+				; Код программы
+ 0000				CODE      SEGMENT
+				      ASSUME CS:CODE, DS:DATA, SS:AStack
+				
+				
+				; Головная процедура
+ 0000				Main      PROC  FAR
+ 0000  1E			      push  DS
+ 0001  2B C0			      sub   AX,AX
+ 0003  50			      push  AX
+ 0004  B8 ---- R		      mov   AX,DATA
+ 0007  8E D8			      mov   DS,AX
+ 0009  B9 0000				  mov   CX, 0
+					  
+					  	  
+					  ;вычисление f4
+ 000C  8B 0E 0004 R			  mov cx, i
+ 0010  8B C1			      mov ax, cx
+ 0012  D1 E0				  shl ax, 1
+ 0014  03 C1				  add ax, cx  ; в ax = 3i
+ 0016  8B 1E 0002 R		      mov bx, b
+ 001A  39 1E 0000 R			  cmp a, bx
+				
+ 001E  7E 18				  jle ifless
+ 0020  D1 E0			        shl ax, 1
+ 0022  8B C8					mov cx, ax
+ 0024  2D 0004					sub ax, 4
+ 0027  F7 D8					neg ax
+ 0029  A3 0008 R				mov i1, ax
+ 002C  83 C1 08			        add cx, 8
+ 002F  F7 D9					neg cx
+ 0031  89 0E 000A R				mov i2, cx
+ 0035  EB 14 90			        jmp finfun
+				
+Microsoft (R) Macro Assembler Version 5.10                  11/23/21 15:58:5
+                                                             Page     1-2
+
+
+ 0038					    ifless:   
+ 0038  8B C8					mov cx, ax
+ 003A  05 0006					add ax, 6
+ 003D  A3 0008 R				mov i1, ax
+ 0040  8B C1					mov ax, cx
+ 0042  B9 000C					mov cx, 12
+ 0045  2B C8					sub cx, ax
+ 0047  89 0E 000A R				mov i2, cx
+					  
+					  ;рассчет f3
+ 004B					  finfun:
+ 004B  8B 1E 0006 R			  mov bx, k
+ 004F  83 FB 00				  cmp bx, 0
+ 0052  74 10				  je f3Second ; k != 0
+ 0054  3B 0E 0008 R				cmp cx, i1
+ 0058  7E 07			        jle min1
+ 005A  8B 0E 0008 R		          mov cx, i1        ; i2 <= i1
+ 005E  EB 12 90					  jmp MainFinal
+ 0061						min1:
+ 0061  EB 0F 90					  jmp MainFinal
+				        
+ 0064					  f3Second:  ; k = 0
+ 0064  03 0E 0008 R		        add cx, i1
+ 0068  83 F9 00				    cmp cx, 0
+ 006B  7D 05				    jge MainFinal     ;модуль i1 
+				+ i2
+ 006D  F7 D9				      neg cx
+ 006F  EB 01 90					  jmp MainFinal
+						
+ 0072					  MainFinal:           ; в cx лежи
+				т значение функции f3
+ 0072  CB			      ret
+ 0073				Main      ENDP
+ 0073				CODE      ENDS
+				END Main
+Microsoft (R) Macro Assembler Version 5.10                  11/23/21 15:58:5
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+ASTACK . . . . . . . . . . . . .  	0018	PARA	STACK	
+CODE . . . . . . . . . . . . . .  	0073	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	000C	PARA	NONE	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+A  . . . . . . . . . . . . . . .  	L WORD	0000	DATA
+
+B  . . . . . . . . . . . . . . .  	L WORD	0002	DATA
+
+F3SECOND . . . . . . . . . . . .  	L NEAR	0064	CODE
+FINFUN . . . . . . . . . . . . .  	L NEAR	004B	CODE
+
+I  . . . . . . . . . . . . . . .  	L WORD	0004	DATA
+I1 . . . . . . . . . . . . . . .  	L WORD	0008	DATA
+I2 . . . . . . . . . . . . . . .  	L WORD	000A	DATA
+IFLESS . . . . . . . . . . . . .  	L NEAR	0038	CODE
+
+K  . . . . . . . . . . . . . . .  	L WORD	0006	DATA
+
+MAIN . . . . . . . . . . . . . .  	F PROC	0000	CODE	Length = 0073
+MAINFINAL  . . . . . . . . . . .  	L NEAR	0072	CODE
+MIN1 . . . . . . . . . . . . . .  	L NEAR	0061	CODE
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  lab3		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+
+
+     83 Source  Lines
+     83 Total   Lines
+     20 Symbols
+
+  48040 + 461267 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
