@@ -1,0 +1,273 @@
+Microsoft (R) Macro Assembler Version 5.10                  12/8/21 20:24:52
+                                                             Page     1-1
+
+
+				;Create your own interruption
+				;interrupt = proc with certain functions
+				;By the end of the program make sure to return 
+				original vectors of interrupts
+				;VAR 26 - 4e: 16h - interrupt from keyboard(by 
+				pressing a key do E: read and input to screen r
+				eal-time clock counting from memory CMOS(in BCD
+				 format)
+				;!should use more than 1Kb for stack
+						;PROG:
+				
+				ASSUME CS:CODE, DS:DATA, SS:STACK
+				
+ 0000				STACK SEGMENT STACK
+ 0000  0400[				DW 1024 DUP(?)		;Declare an arr
+				ay of 1024 unitialized Words (2 bytes) for stac
+				k
+	   ????			
+			 ]	
+				
+ 0800				STACK ENDS
+				
+ 0000				DATA	SEGMENT
+ 0000  0000				KEEP_CS DW 0 		;to store segme
+				nt
+ 0002  0000				KEEP_IP DW 0 		;to store inter
+				ruption vector shift
+ 0004				DATA	ENDS
+				
+ 0000				CODE	SEGMENT
+				
+ 0000				SUBR_INT PROC FAR		;port 70h is fo
+				r input(stores addr) use it to get CMOS
+								;registers, por
+				t 71h - to read from them - if not using INT 1A
+				h
+ 0000  EB 6A 90				JMP start
+					
+ 0003  0000				INIT_SS DW 0000h
+ 0005  0000				INIT_SP DW 0000h
+ 0007  0028[				INT_STACK DB 40 DUP(?)
+	   ??			
+			 ]	
+				
+					
+ 002F					read_CMOS PROC
+ 002F  52					PUSH DX
+							;hours
+ 0030  8A C5					MOV AL, CH		;in CX=
+				HHMM,
+ 0032  E8 004E R				CALL print_bcd
+ 0035  E8 0047 R				CALL colon
+							;minutes
+ 0038  8A C1					MOV AL, CL
+Microsoft (R) Macro Assembler Version 5.10                  12/8/21 20:24:52
+                                                             Page     1-2
+
+
+ 003A  E8 004E R				CALL print_bcd
+ 003D  E8 0047 R				CALL colon
+							;seconds
+ 0040  8A C6					MOV AL, DH		;in DH=
+				SS
+ 0042  E8 004E R				CALL print_bcd
+ 0045  5A					POP DX
+ 0046  C3					RET	
+ 0047					read_CMOS ENDP
+					
+ 0047					colon PROC
+ 0047  B2 3A					MOV DL, ':'
+ 0049  B4 02					MOV AH, 02h
+ 004B  CD 21					INT 21H		
+ 004D  C3					RET
+ 004E					colon ENDP
+						
+ 004E					print_bcd PROC
+ 004E  52					PUSH DX		;save initial r
+				egisters
+ 004F  51					PUSH CX
+ 0050  B1 04					MOV CL, 4
+ 0052  8A E0					MOV AH, AL		;now al
+				 = 43 = ah
+ 0054  24 0F					AND AL, 00001111b	;now al
+				 = 03 (as it is in BCD, each digit is xxxxb)
+ 0056  D2 EC					SHR AH, CL		;now ah
+				 = 04 => ax = 0403
+ 0058  04 30					ADD AL, '0'		;get AS
+				CII value of '0' + shift in AL
+ 005A  80 C4 30					ADD AH, '0'
+ 005D  8A D4					MOV DL, AH		;handle
+				 print (DL = to print)
+ 005F  8A F0					MOV DH, AL
+ 0061  B4 02					MOV AH, 02h
+ 0063  CD 21					INT 21h
+ 0065  8A D6					MOV DL, DH		;for so
+				me reason otherwise DL doesnt change
+ 0067  CD 21					INT 21h
+ 0069  59					POP CX			;return
+				 initial values
+ 006A  5A					POP DX
+ 006B  C3					RET
+ 006C					print_bcd ENDP
+					
+ 006C				start:	
+				;------------------------------<save original r
+				egisters>	
+ 006C  2E: 89 26 0005 R			MOV INIT_SP, SP
+ 0071  2E: 8C 16 0003 R		    	MOV INIT_SS, ss
+ 0076  BC ---- R		    	mov sp, SEG INT_STACK	;get the segmen
+				t of the new stack top into SP
+ 0079  8E D4			    	mov ss, sp		;now SS == top 
+				addr of new stack segment
+Microsoft (R) Macro Assembler Version 5.10                  12/8/21 20:24:52
+                                                             Page     1-3
+
+
+ 007B  50			    	PUSH AX		
+ 007C  51			    	PUSH CX		
+ 007D  52			    	PUSH DX
+				    	
+				;------------------------------<process the int
+				errupt>
+ 007E  B4 02				MOV AH, 02H		;read real time
+				 from CMOS
+ 0080  CD 1A				INT 1Ah		;returns CX:DX = clock 
+				count
+ 0082  E8 002F R			CALL read_CMOS
+					
+ 0085  5A				POP DX			;restore regist
+				ers
+ 0086  59				POP CX
+ 0087  58				POP AX
+ 0088  2E: 8E 16 0003 R			MOV ss, INIT_SS
+ 008D  2E: 8B 26 0005 R		    	MOV SP, INIT_SP
+ 0092  B0 20				MOV AL, 20H		;these lines al
+				low to process lower level 
+ 0094  E6 20				OUT 20H, AL 		;interrupts tha
+				n those we worked with
+ 0096  CF				IRET			;exit from iter
+				rupt
+ 0097				SUBR_INT ENDP
+				
+				
+ 0097				Main	PROC FAR
+ 0097  1E				PUSH DS		;write into stack
+ 0098  2B C0				SUB AX, AX		;write a 0
+ 009A  50				PUSH AX		;write ax into stack =>
+				 stack initialzation
+ 009B  B8 ---- R			MOV AX, DATA		;DataSegment in
+				itialization
+ 009E  8E D8				MOV DS, AX
+				;-----------<save current vector>
+ 00A0  B4 35				MOV AH, 35H 		;get curr vecto
+				r
+ 00A2  B0 60				MOV AL, 60H		;get curr vecto
+				r number
+ 00A4  CD 21				INT 21H
+ 00A6  89 1E 0002 R			MOV KEEP_IP, BX	;store the shift
+ 00AA  8C 06 0000 R			MOV KEEP_CS, ES 	;store interrup
+				tion vector segment
+				
+				;----------<install new interrupt vector>
+ 00AE  1E				PUSH DS
+ 00AF  BA 0000 R			MOV DX, OFFSET SUBR_INT	;shift fot the 
+				proc into DX
+ 00B2  B8 ---- R			MOV AX, SEG SUBR_INT	;procedure segm
+				ent we save and
+ 00B5  8E D8				MOV DS, AX		;put into DS
+ 00B7  B4 25				MOV AH, 25H		;funtion to ins
+				tall new vector, it stores
+Microsoft (R) Macro Assembler Version 5.10                  12/8/21 20:24:52
+                                                             Page     1-4
+
+
+								;segment and sh
+				ift addresses into interrupt
+								;vector with ch
+				osen number.
+ 00B9  B0 60				MOV AL, 60H		;new vector num
+				ber
+ 00BB  CD 21				INT 21H		;change the interrupt
+ 00BD  1F				POP DS
+					
+				;----------<get key scan-code-(let`s it be 'Q')
+				>
+ 00BE					readkey:
+ 00BE  B4 00					MOV AH, 0		;by pre
+				ssing key in AH a BIOS scancode is stored, and 
+				in AL - an ASCII symbol
+ 00C0  CD 16					INT 16H		;interrupt to g
+				et the key scancode
+ 00C2  80 FC 10					CMP AH, 16		;16 is 
+				a scancode of 'Q'
+ 00C5  75 F7					JNE readkey		;if it`
+				s not 'Q' -> repeat reading, else continue
+						
+ 00C7  CD 60					INT 60H		;call changed i
+				nterrupt
+				
+				;-----------restore original interrupt vector-
+ 00C9  FA				CLI				;disabl
+				e interrupts
+ 00CA  1E				PUSH DS			;save ds
+ 00CB  8B 16 0002 R			MOV DX, KEEP_IP		;restore origin
+				al shift
+ 00CF  A1 0000 R			MOV AX, KEEP_CS		;restore int ve
+				ctor segment
+ 00D2  8E D8				MOV DS, AX
+ 00D4  B4 25				MOV AH, 25H			;to set
+				 int vector
+ 00D6  B0 60				MOV AL, 60H			;vector
+				 num
+ 00D8  CD 21				INT 21H			;restore vector
+ 00DA  1F				POP DS
+ 00DB  FB				STI				;enable
+				 interrupts
+ 00DC  B4 4C				MOV AH, 4CH
+ 00DE  CD 21			   	INT 21H
+ 00E0				Main ENDP
+ 00E0				CODE ENDS
+				END Main
+Microsoft (R) Macro Assembler Version 5.10                  12/8/21 20:24:52
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+CODE . . . . . . . . . . . . . .  	00E0	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	0004	PARA	NONE	
+STACK  . . . . . . . . . . . . .  	0800	PARA	STACK	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+COLON  . . . . . . . . . . . . .  	N PROC	0047	CODE	Length = 0007
+
+INIT_SP  . . . . . . . . . . . .  	L WORD	0005	CODE
+INIT_SS  . . . . . . . . . . . .  	L WORD	0003	CODE
+INT_STACK  . . . . . . . . . . .  	L BYTE	0007	CODE	Length = 0028
+
+KEEP_CS  . . . . . . . . . . . .  	L WORD	0000	DATA
+KEEP_IP  . . . . . . . . . . . .  	L WORD	0002	DATA
+
+MAIN . . . . . . . . . . . . . .  	F PROC	0097	CODE	Length = 0049
+
+PRINT_BCD  . . . . . . . . . . .  	N PROC	004E	CODE	Length = 001E
+
+READKEY  . . . . . . . . . . . .  	L NEAR	00BE	CODE
+READ_CMOS  . . . . . . . . . . .  	N PROC	002F	CODE	Length = 0018
+
+START  . . . . . . . . . . . . .  	L NEAR	006C	CODE
+SUBR_INT . . . . . . . . . . . .  	F PROC	0000	CODE	Length = 0097
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  lab5		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+
+
+    148 Source  Lines
+    148 Total   Lines
+     20 Symbols
+
+  48004 + 455158 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
