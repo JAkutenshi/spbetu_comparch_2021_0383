@@ -1,0 +1,156 @@
+Microsoft (R) Macro Assembler Version 5.10                  12/2/21 06:05:57
+                                                             Page     1-1
+
+
+				; Стек  программы
+ 0000				AStack SEGMENT  STACK
+ 0000  000C[				       DW 12 DUP(?)
+	   ????			
+			 ]	
+				
+ 0018				AStack  ENDS
+				;Данные программы
+ 0000				DATA SEGMENT
+					;Директивы описания д
+				анных
+ 0000  000A				a       DW 10
+ 0002  0005				b       DW 5
+ 0004  0005				i       DW 5
+ 0006  0004				k       DW 4
+ 0008  0000				i1      DW 0
+ 000A  0000				i2      DW 0
+				
+ 000C				DATA      ENDS
+				
+				; Код программы
+ 0000				CODE SEGMENT
+					       ASSUME CS:CODE, DS:DATA, SS:ASta
+				ck
+				      
+					; Головная процедура
+ 0000				Main PROC  FAR
+ 0000  1E				       push   DS
+ 0001  2B C0				       sub    AX,AX
+ 0003  50				       push   AX
+ 0004  B8 ---- R			       mov    AX,DATA
+ 0007  8E D8				       mov    DS,AX
+ 0009  B9 0000				       mov    CX, 0
+				            
+ 000C  8B 0E 0004 R			       mov    cx, i
+ 0010  8B D1				       mov    dx, cx
+ 0012  83 C2 01				       add    dx, 1   ; dx = i+1
+ 0015  D1 E1				       shl    cx, 1   ; cx = 2i
+ 0017  8B 1E 0002 R			       mov    bx, b
+ 001B  39 1E 0000 R			       cmp    a, bx
+ 001F  7E 19				       jle    fun16
+				         
+					; a > b
+ 0021  8B C1				       mov    ax, cx
+ 0023  F7 D9					   neg    cx
+ 0025  83 C1 0F					   add    cx, 15
+ 0028  89 0E 0008 R			       mov    i1, cx
+ 002C  8B CA				       mov    cx, dx
+ 002E  03 CA				       add    cx, dx
+ 0030  83 E9 04				       sub    cx, 4
+ 0033  89 0E 000A R			       mov    i2, cx
+ 0037  EB 1B 90				       jmp    fin
+						
+					; a <= b
+Microsoft (R) Macro Assembler Version 5.10                  12/2/21 06:05:57
+                                                             Page     1-2
+
+
+ 003A					fun16: 
+ 003A  03 0E 0004 R			       add    cx, i
+ 003E  83 C1 04				       add    cx, 4
+ 0041  89 0E 0008 R			       mov    i1, cx
+				
+ 0045  8B CA				       mov    cx, dx
+ 0047  D1 E1				       shl    cx, 1
+ 0049  03 CA				       add    cx, dx
+ 004B  F7 D9					   neg    cx
+ 004D  83 C1 05					   add    cx, 5
+ 0050  89 0E 000A R			       mov    i2, cx
+					  
+					;  f5
+ 0054					fin:   
+ 0054  8B 1E 0006 R			       mov    bx, k
+ 0058  A1 0008 R			       mov    ax, i1
+ 005B  3D 0000				       cmp    ax, 0
+ 005E  7D 02				       jge    skip_i1     ; |i1|
+ 0060  F7 D8				       neg    ax
+ 0062					skip_i1: 
+ 0062  83 FB 00				       cmp    bx, 0
+ 0065  74 10				       je     zero
+ 0067  8B 0E 000A R			       mov    cx, i2  
+ 006B  83 F9 00				       cmp    cx, 0
+ 006E  7D 02				       jge    skip_i2
+ 0070  F7 D9				       neg    cx
+ 0072					skip_i2:  
+ 0072  03 C8				       add    cx, ax
+ 0074  EB 11 90				       jmp    result
+ 0077					zero:  
+ 0077  3D 0006				       cmp    ax, 6
+ 007A  7D 05				       jge    min
+ 007C  8B C8				       mov    cx, ax    ; |i1| < 6
+ 007E  EB 07 90				       jmp    result
+ 0081					min:   
+ 0081  B9 0006				       mov    cx, 6     ; |i1| >= 6
+ 0084  EB 01 90				       jmp    result
+ 0087					result:
+ 0087  CB				       ret
+ 0088				Main ENDP
+ 0088				CODE      ENDS
+				END Main
+Microsoft (R) Macro Assembler Version 5.10                  12/2/21 06:05:57
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+ASTACK . . . . . . . . . . . . .  	0018	PARA	STACK	
+CODE . . . . . . . . . . . . . .  	0088	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	000C	PARA	NONE	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+A  . . . . . . . . . . . . . . .  	L WORD	0000	DATA
+
+B  . . . . . . . . . . . . . . .  	L WORD	0002	DATA
+
+FIN  . . . . . . . . . . . . . .  	L NEAR	0054	CODE
+FUN16  . . . . . . . . . . . . .  	L NEAR	003A	CODE
+
+I  . . . . . . . . . . . . . . .  	L WORD	0004	DATA
+I1 . . . . . . . . . . . . . . .  	L WORD	0008	DATA
+I2 . . . . . . . . . . . . . . .  	L WORD	000A	DATA
+
+K  . . . . . . . . . . . . . . .  	L WORD	0006	DATA
+
+MAIN . . . . . . . . . . . . . .  	F PROC	0000	CODE	Length = 0088
+MIN  . . . . . . . . . . . . . .  	L NEAR	0081	CODE
+
+RESULT . . . . . . . . . . . . .  	L NEAR	0087	CODE
+
+SKIP_I1  . . . . . . . . . . . .  	L NEAR	0062	CODE
+SKIP_I2  . . . . . . . . . . . .  	L NEAR	0072	CODE
+
+ZERO . . . . . . . . . . . . . .  	L NEAR	0077	CODE
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  LR3		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+
+
+     91 Source  Lines
+     91 Total   Lines
+     22 Symbols
+
+  48070 + 461237 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
