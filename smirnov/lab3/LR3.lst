@@ -1,0 +1,145 @@
+Microsoft (R) Macro Assembler Version 5.10                  12/9/21 14:12:46
+                                                             Page     1-1
+
+
+ 0000				AStack SEGMENT  STACK
+ 0000  000C[			    DW 12 DUP(?)
+	   ????			
+			 ]	
+				
+ 0018				AStack  ENDS
+				;Данные программы
+ 0000				DATA      SEGMENT
+				;Директивы описания данных
+ 0000  0000			a      DW    0
+ 0002  0000			b      DW    0
+ 0004  0000			i      DW    0
+ 0006  0000			k      DW    0
+ 0008  0000			i1     DW    0
+ 000A  0000			i2     DW    0
+				
+ 000C				DATA      ENDS
+				
+				; Код программы
+ 0000				CODE      SEGMENT
+				      ASSUME CS:CODE, DS:DATA, SS:AStack
+				
+				; Головная процедура
+ 0000				Main      PROC  FAR
+ 0000  1E			      push  DS
+ 0001  2B C0			      sub   AX,AX
+ 0003  50			      push  AX
+ 0004  B8 ---- R		      mov   AX,DATA
+ 0007  8E D8			      mov   DS,AX
+ 0009  B9 0000			      mov   CX, 0
+				
+ 000C  C7 06 0000 R 0002	      mov a, 2
+ 0012  C7 06 0002 R 0001	      mov b, 1
+ 0018  C7 06 0004 R 0001	      mov i, 1
+ 001E  C7 06 0006 R 0000	      mov k, 0
+					  
+					  ;вычисление f3
+ 0024  8B 0E 0004 R			  mov cx, i
+ 0028  D1 E1				  shl cx, 1
+ 002A  8B C1				  mov ax, cx
+ 002C  D1 E1				  shl cx, 1
+ 002E  8B 1E 0002 R			  mov bx, b    ;
+ 0032  39 1E 0000 R			  cmp a, bx    ; сравнение a и b
+ 0036  7E 08				  jle f1second
+ 0038  F7 D9					neg cx
+ 003A  83 C1 07					add cx, 7
+ 003D  EB 08 90					jmp f1final
+ 0040					  f1second:
+ 0040  03 C8					add cx, ax
+ 0042  F7 D9					neg cx
+ 0044  83 C1 08					add cx, 8
+ 0047					  f1final:
+ 0047  89 0E 0008 R			  mov i1, cx
+					  
+Microsoft (R) Macro Assembler Version 5.10                  12/9/21 14:12:46
+                                                             Page     1-2
+
+
+					  ;вычисление f5
+ 004B  8B C8				  mov cx, ax
+ 004D  D1 E1				  shl cx, 1
+ 004F  39 1E 0000 R			  cmp a, bx
+ 0053  7E 08				  jle f2second
+ 0055  F7 D9					neg cx
+ 0057  83 C1 14					add cx, 20
+ 005A  EB 08 90					jmp f2final
+ 005D					  f2second:       
+ 005D  03 C8				    add cx, ax
+ 005F  83 C1 FA					add cx, -6
+ 0062  F7 D9					neg cx
+ 0064					  f2final:
+ 0064  89 0E 000A R			  mov i2, cx
+					  
+					  ;рассчет res
+ 0068  8B 1E 0006 R			  mov bx, k
+ 006C  83 FB 00				  cmp bx, 0
+ 006F  75 0E				  jne resSecond
+ 0071  03 0E 0008 R			    add cx, i1
+ 0075  83 F9 00					cmp cx, 0
+ 0078  7D 0F					jge MainFinal
+ 007A  F7 D9					neg cx
+ 007C  EB 0B 90					jmp MainFinal
+ 007F					  resSecond:
+ 007F  3B 0E 0008 R			    cmp cx, i1
+ 0083  7C 04					jl MainFinal
+ 0085  8B 0E 0008 R				mov cx, i1
+ 0089					  MainFinal:           ; в cx лежит зна
+				чение res
+ 0089  CB			      ret
+ 008A				Main      ENDP
+ 008A				CODE      ENDS
+				END Main 
+Microsoft (R) Macro Assembler Version 5.10                  12/9/21 14:12:46
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+ASTACK . . . . . . . . . . . . .  	0018	PARA	STACK	
+CODE . . . . . . . . . . . . . .  	008A	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	000C	PARA	NONE	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+A  . . . . . . . . . . . . . . .  	L WORD	0000	DATA
+
+B  . . . . . . . . . . . . . . .  	L WORD	0002	DATA
+
+F1FINAL  . . . . . . . . . . . .  	L NEAR	0047	CODE
+F1SECOND . . . . . . . . . . . .  	L NEAR	0040	CODE
+F2FINAL  . . . . . . . . . . . .  	L NEAR	0064	CODE
+F2SECOND . . . . . . . . . . . .  	L NEAR	005D	CODE
+
+I  . . . . . . . . . . . . . . .  	L WORD	0004	DATA
+I1 . . . . . . . . . . . . . . .  	L WORD	0008	DATA
+I2 . . . . . . . . . . . . . . .  	L WORD	000A	DATA
+
+K  . . . . . . . . . . . . . . .  	L WORD	0006	DATA
+
+MAIN . . . . . . . . . . . . . .  	F PROC	0000	CODE	Length = 008A
+MAINFINAL  . . . . . . . . . . .  	L NEAR	0089	CODE
+
+RESSECOND  . . . . . . . . . . .  	L NEAR	007F	CODE
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  lr3		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+
+
+     84 Source  Lines
+     84 Total   Lines
+     21 Symbols
+
+  47996 + 461311 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
