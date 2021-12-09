@@ -1,0 +1,196 @@
+Microsoft (R) Macro Assembler Version 5.10                  11/4/21 16:31:48
+                                                             Page     1-1
+
+
+ = '$				EOL EQU '$
+				
+				;----------Стек программы---------
+				-
+ 0000				AStack SEGMENT STACK
+ 0000  0020[			DW 32 DUP(?)
+	   ????			
+			 ]	
+				
+ 0040				AStack ENDS
+				
+				;----------Данные программы-----
+				---
+ 0000				DATA SEGMENT
+ 0000  0080[			buffer DB 128 DUP(?)
+	   ??			
+			 ]	
+				
+ 0080  0003			a DW 3
+ 0082  FFFB			b DW -5
+ 0084  FFFE			i DW -2
+ 0086  0001			k DW 1
+ 0088  0000			i1 DW ?
+ 008A  0000			i2 DW ?
+ 008C  0000			res DW ?
+ 008E				DATA ENDS
+				
+				;----------Код программы-----------
+ 0000				CODE SEGMENT
+				ASSUME CS:CODE, DS:DATA, SS:AStack
+				
+				;--------Головная процедура---
+				-----
+ 0000				Main PROC FAR
+ 0000  1E				push ds
+ 0001  2B C0				sub ax, ax
+ 0003  50				push ax
+ 0004  B8 ---- R			mov ax, DATA
+ 0007  8E D8				mov ds, ax
+				
+ 0009  A1 0084 R			mov ax, i
+ 000C  8B 1E 0080 R			mov bx, a
+ 0010  3B 1E 0082 R			cmp bx, b	; Сравниваем 
+				a и b
+ 0014  7E 15				jle case2 	; Если a <= b, пе
+				рейти к case2
+ 0016				case1:
+					; Вычисление f2
+ 0016  D1 E0				shl ax, 1
+ 0018  D1 E0				shl ax, 1	; ax = 4i
+ 001A  F7 D8				neg ax		; ax = -4i
+ 001C  2D 0003				sub ax, 3	; ax = f2(i) = -4i - 3 
+ 001F  A3 0088 R			mov i1, ax	; i1 = -4i-3
+					; Вычисление f7
+Microsoft (R) Macro Assembler Version 5.10                  11/4/21 16:31:48
+                                                             Page     1-2
+
+
+ 0022  05 0008				add ax, 8	; ax = f7(i) = -4i + 5
+ 0025  A3 008A R			mov i2, ax	; i2 = -4i + 5
+ 0028  EB 1B 90				jmp f4_
+ 002B				case2:
+					; Вычисление f7
+ 002B  8B D8				mov bx, ax	; bx = i
+ 002D  D1 E0				shl ax, 1	; ax = 2i
+ 002F  03 C3				add ax, bx	; ax = 3i
+ 0031  BB 000A				mov bx, 10
+ 0034  2B D8				sub bx, ax	; bx = 10 - 3i
+ 0036  89 1E 008A R			mov i2, bx
+					; Вычисление f2
+ 003A  D1 E3				shl bx, 1	; bx = 20 - 6i
+ 003C  F7 DB				neg bx		; bx = 6i - 20
+ 003E  83 C3 0A				add bx, 10	; bx = 6i - 10 
+ 0041  89 1E 0088 R			mov i1, bx
+				
+ 0045				f4_:
+ 0045  8B 1E 0086 R			mov bx, k
+ 0049  83 FB 00				cmp bx, 0
+ 004C  7D 24				jge f4_case2 	; Если k >= 0, пе
+				рейти к f3_case2
+				
+ 004E				f4_case1:
+ 004E  A1 0088 R			mov ax, i1
+ 0051  2B 06 008A R			sub ax, i2 	; i1-i2
+ 0055  3D 0000				cmp ax, 0
+ 0058  7C 03				jl abs		; Если i1 - i2 < 0,
+				 найдём модуль выражения
+ 005A  EB 03 90				jmp min		; Больше 0, пе�
+				�ейти к поиску минимально�
+				�о числа в паре
+ 005D				abs:
+ 005D  F7 D8				neg ax
+ 005F				min: 
+ 005F  BB 0002				mov bx, 2
+ 0062  3D 0002				cmp ax, 2
+ 0065  7E 06				jle absmin 	; Если |i1 - i2| <=
+				 2, перейти к absmin
+ 0067				twomin:
+ 0067  B9 0002				mov cx, 2
+ 006A  EB 18 90				jmp f4_end
+ 006D				absmin: 
+ 006D  8B C8				mov cx, ax
+ 006F  EB 13 90				jmp f4_end	
+				
+ 0072				f4_case2:
+ 0072  A1 008A R			mov ax, i2
+ 0075  F7 D8				neg ax
+ 0077  3D FFFA				cmp ax, -6
+ 007A  7D 06				jge i2max	; Если -i2 >= -6, �
+				�ерейти к i2max
+ 007C				neg6max:
+ 007C  B9 FFFA				mov cx, -6
+Microsoft (R) Macro Assembler Version 5.10                  11/4/21 16:31:48
+                                                             Page     1-3
+
+
+ 007F  EB 03 90				jmp f4_end
+ 0082				i2max:
+ 0082  8B C8				mov cx, ax	
+ 0084				f4_end:
+ 0084  89 0E 008C R			mov res, cx
+ 0088  CB				ret
+				
+ 0089				Main ENDP
+ 0089				CODE ENDS
+				END Main
+Microsoft (R) Macro Assembler Version 5.10                  11/4/21 16:31:48
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+ASTACK . . . . . . . . . . . . .  	0040	PARA	STACK	
+CODE . . . . . . . . . . . . . .  	0089	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	008E	PARA	NONE	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+A  . . . . . . . . . . . . . . .  	L WORD	0080	DATA
+ABS  . . . . . . . . . . . . . .  	L NEAR	005D	CODE
+ABSMIN . . . . . . . . . . . . .  	L NEAR	006D	CODE
+
+B  . . . . . . . . . . . . . . .  	L WORD	0082	DATA
+BUFFER . . . . . . . . . . . . .  	L BYTE	0000	DATA	Length = 0080
+
+CASE1  . . . . . . . . . . . . .  	L NEAR	0016	CODE
+CASE2  . . . . . . . . . . . . .  	L NEAR	002B	CODE
+
+EOL  . . . . . . . . . . . . . .  	TEXT  '$		
+
+F4_  . . . . . . . . . . . . . .  	L NEAR	0045	CODE
+F4_CASE1 . . . . . . . . . . . .  	L NEAR	004E	CODE
+F4_CASE2 . . . . . . . . . . . .  	L NEAR	0072	CODE
+F4_END . . . . . . . . . . . . .  	L NEAR	0084	CODE
+
+I  . . . . . . . . . . . . . . .  	L WORD	0084	DATA
+I1 . . . . . . . . . . . . . . .  	L WORD	0088	DATA
+I2 . . . . . . . . . . . . . . .  	L WORD	008A	DATA
+I2MAX  . . . . . . . . . . . . .  	L NEAR	0082	CODE
+
+K  . . . . . . . . . . . . . . .  	L WORD	0086	DATA
+
+MAIN . . . . . . . . . . . . . .  	F PROC	0000	CODE	Length = 0089
+MIN  . . . . . . . . . . . . . .  	L NEAR	005F	CODE
+
+NEG6MAX  . . . . . . . . . . . .  	L NEAR	007C	CODE
+
+RES  . . . . . . . . . . . . . .  	L WORD	008C	DATA
+
+TWOMIN . . . . . . . . . . . . .  	L NEAR	0067	CODE
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  lab3_fix		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+
+Microsoft (R) Macro Assembler Version 5.10                  11/4/21 16:31:48
+                                                             Symbols-2
+
+
+
+    101 Source  Lines
+    101 Total   Lines
+     30 Symbols
+
+  47942 + 459318 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors

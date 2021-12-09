@@ -1,0 +1,101 @@
+EOL EQU '$
+
+;----------Стек программы----------
+AStack SEGMENT STACK
+DW 32 DUP(?)
+AStack ENDS
+
+;----------Данные программы--------
+DATA SEGMENT
+buffer DB 128 DUP(?)
+a DW 3
+b DW -5
+i DW -2
+k DW 1
+i1 DW ?
+i2 DW ?
+res DW ?
+DATA ENDS
+
+;----------Код программы-----------
+CODE SEGMENT
+ASSUME CS:CODE, DS:DATA, SS:AStack
+
+;--------Головная процедура--------
+Main PROC FAR
+	push ds
+	sub ax, ax
+	push ax
+	mov ax, DATA
+	mov ds, ax
+
+	mov ax, i
+	mov bx, a
+	cmp bx, b	; Сравниваем a и b
+	jle case2 	; Если a <= b, перейти к case2
+case1:
+	; Вычисление f2
+	shl ax, 1
+	shl ax, 1	; ax = 4i
+	neg ax		; ax = -4i
+	sub ax, 3	; ax = f2(i) = -4i - 3 
+	mov i1, ax	; i1 = -4i-3
+	; Вычисление f7
+	add ax, 8	; ax = f7(i) = -4i + 5
+	mov i2, ax	; i2 = -4i + 5
+	jmp f4_
+case2:
+	; Вычисление f7
+	mov bx, ax	; bx = i
+	shl ax, 1	; ax = 2i
+	add ax, bx	; ax = 3i
+	mov bx, 10
+	sub bx, ax	; bx = 10 - 3i
+	mov i2, bx
+	; Вычисление f2
+	shl bx, 1	; bx = 20 - 6i
+	neg bx		; bx = 6i - 20
+	add bx, 10	; bx = 6i - 10 
+	mov i1, bx
+
+f4_:
+	mov bx, k
+	cmp bx, 0
+	jge f4_case2 	; Если k >= 0, перейти к f3_case2
+
+f4_case1:
+	mov ax, i1
+	sub ax, i2 	; i1-i2
+	cmp ax, 0
+	jl abs		; Если i1 - i2 < 0, найдём модуль выражения
+	jmp min		; Больше 0, перейти к поиску минимального числа в паре
+abs:
+	neg ax
+min: 
+	mov bx, 2
+	cmp ax, 2
+	jle absmin 	; Если |i1 - i2| <= 2, перейти к absmin
+twomin:
+	mov cx, 2
+	jmp f4_end
+absmin: 
+	mov cx, ax
+	jmp f4_end	
+
+f4_case2:
+	mov ax, i2
+	neg ax
+	cmp ax, -6
+	jge i2max	; Если -i2 >= -6, перейти к i2max
+neg6max:
+	mov cx, -6
+	jmp f4_end
+i2max:
+	mov cx, ax	
+f4_end:
+	mov res, cx
+	ret
+
+Main ENDP
+CODE ENDS
+END Main
