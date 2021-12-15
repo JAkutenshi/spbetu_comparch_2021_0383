@@ -1,0 +1,210 @@
+Microsoft (R) Macro Assembler Version 5.10                  12/15/21 20:15:1
+                                                             Page     1-1
+
+
+ 0000				DATA SEGMENT
+ 0000  0000			        KEEP_CS DW 0 ; для хранения сегмента
+ 0002  0000			        KEEP_IP DW 0 ; и смещения вектора преры
+				вания
+ 0004  48 65 6C 6C 6F 20	        HELLO   DB 'Hello World!',10,13,'$' 
+       57 6F 72 6C 64 21	
+       0A 0D 24			
+ 0013				DATA ENDS
+				
+ 0000				AStack    SEGMENT  STACK
+ 0000  0200[			          DW 512 DUP(?)    ;
+	   ????			
+			 ]	
+				
+ 0400				AStack    ENDS
+				
+				
+ 0000				CODE      SEGMENT
+				          ASSUME CS:Code, DS:DATA, SS:AStack
+				
+ 0000				SUBR_INT PROC FAR
+ 0000  EB 2D 90			        jmp start_proc
+				
+ 0003  0000			        ss_int dw 0
+ 0005  0000				    sp_int dw 0
+ 0007  0014[			        int_stack  DW 20 DUP(?)
+	   ????			
+			 ]	
+				
+				
+ 002F				start_proc:
+ 002F  2E: 8C 16 0003 R		    mov ss_int, ss
+ 0034  2E: 89 26 0005 R			mov sp_int, sp
+				
+ 0039  52			    push dx
+ 003A  51				push cx
+ 003B  53				push bx
+ 003C  50				push ax
+ 003D  50				push ax
+				
+ 003E  B0 00				mov al, 0
+ 0040				print_msg:
+ 0040  B4 09			    MOV   AH,9
+ 0042  BA 0004 R		    MOV   DX, OFFSET HELLO
+ 0045  CD 21				int   21h  ; Вызов функции DOS по преры
+				ванию
+				
+ 0047				delay_count:
+ 0047  59			    pop cx
+ 0048  FE C9				dec cl
+ 004A  74 25				jz ending
+ 004C  51				push cx
+				
+ 004D  3C 00				cmp al, 0   ;al - текущая задержка
+Microsoft (R) Macro Assembler Version 5.10                  12/15/21 20:15:1
+                                                             Page     1-2
+
+
+ 004F  74 05				je one
+				
+ 0051  D0 E0				shl al, 1
+ 0053  EB 03 90				jmp start
+				
+ 0056				one: 
+ 0056  FE C0			    inc al
+				
+ 0058				start:
+ 0058  8A D8			    mov bl, al  ;bl - отсчет секунд, bh - текущ
+				ий номер секунды
+ 005A  B4 2C				mov  ah, 2ch
+ 005C  CD 21				int  21h 
+ 005E  8A FE				mov bh, dh
+				
+ 0060				Delay:
+ 0060  90				nop
+ 0061  B4 2C				mov  ah, 2ch
+ 0063  CD 21				int  21h 
+ 0065  3A F7				cmp dh, bh
+ 0067  74 F7				je Delay
+				
+ 0069  8A FE			    mov  bh, dh      
+ 006B  FE CB				dec  bl   
+ 006D  75 F1				jnz Delay
+ 006F  EB CF				jmp print_msg
+				
+ 0071				ending:
+ 0071  58				pop ax
+ 0072  5B				pop bx
+ 0073  59				pop cx
+ 0074  5A				pop dx
+					
+ 0075  B0 20				mov al,20h
+ 0077  E6 20				out 20h,al
+				       
+ 0079  CF				iret
+ 007A				SUBR_INT ENDP
+				
+				
+ 007A				Main      PROC  FAR
+				
+ 007A  1E			        push  DS       ;\  Сохранение адреса на
+				чала PSP в стеке
+ 007B  2B C0			        sub   AX,AX    ; > для последующего вос
+				становления по
+ 007D  50			        push  AX       ;/  команде ret, заверша
+				ющей процедуру.
+ 007E  B8 ---- R		        mov   AX,DATA             ; Загрузка се
+				гментного
+ 0081  8E D8			        mov   DS,AX               ; регистра да
+				нных.
+				
+ 0083  B4 35			        MOV AH, 35H ; функция получения вектора
+Microsoft (R) Macro Assembler Version 5.10                  12/15/21 20:15:1
+                                                             Page     1-3
+
+
+ 0085  B0 60			        MOV AL, 60H ; номер вектора
+ 0087  CD 21			        INT 21H ; возвращает текущее значение в
+				ектора прерывания
+ 0089  89 1E 0002 R		        MOV KEEP_IP, BX ; запоминание смещения
+ 008D  8C 06 0000 R		        MOV KEEP_CS, ES ; и сегмента вектора пр
+				ерывания
+				
+ 0091  1E			        PUSH DS
+ 0092  BA 0000 R		        MOV DX, OFFSET SUBR_INT ; смещение для 
+				процедуры в DX
+ 0095  B8 ---- R		        MOV AX, SEG SUBR_INT ; сегмент процедур
+				ы
+ 0098  8E D8			        MOV DS, AX ; помещаем в DS
+ 009A  B4 25			        MOV AH, 25H ; функция установки вектора
+ 009C  B0 60			        MOV AL, 60H ; номер вектора
+ 009E  CD 21			        INT 21H ; меняем прерывание
+ 00A0  1F			        POP DS
+						
+ 00A1  B0 05					mov al, 5
+ 00A3  CD 60			        int 60H; вызов измененного прерывания
+				
+ 00A5  FA			        CLI
+ 00A6  1E			        PUSH DS
+ 00A7  8B 16 0002 R		        MOV DX, KEEP_IP
+ 00AB  A1 0000 R		        MOV AX, KEEP_CS
+ 00AE  8E D8			        MOV DS, AX
+ 00B0  B4 25			        MOV AH, 25H
+ 00B2  B0 60			        MOV AL, 60H
+ 00B4  CD 21			        INT 21H ; восстанавливаем старый вектор
+				 прерывания
+ 00B6  1F			        POP DS
+ 00B7  FB			        STI		
+				
+ 00B8  CB			        RET
+ 00B9				Main      ENDP
+ 00B9				CODE      ENDS
+				          END Main 
+Microsoft (R) Macro Assembler Version 5.10                  12/15/21 20:15:1
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+ASTACK . . . . . . . . . . . . .  	0400	PARA	STACK	
+CODE . . . . . . . . . . . . . .  	00B9	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	0013	PARA	NONE	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+DELAY  . . . . . . . . . . . . .  	L NEAR	0060	CODE
+DELAY_COUNT  . . . . . . . . . .  	L NEAR	0047	CODE
+
+ENDING . . . . . . . . . . . . .  	L NEAR	0071	CODE
+
+HELLO  . . . . . . . . . . . . .  	L BYTE	0004	DATA
+
+INT_STACK  . . . . . . . . . . .  	L WORD	0007	CODE	Length = 0014
+
+KEEP_CS  . . . . . . . . . . . .  	L WORD	0000	DATA
+KEEP_IP  . . . . . . . . . . . .  	L WORD	0002	DATA
+
+MAIN . . . . . . . . . . . . . .  	F PROC	007A	CODE	Length = 003F
+
+ONE  . . . . . . . . . . . . . .  	L NEAR	0056	CODE
+
+PRINT_MSG  . . . . . . . . . . .  	L NEAR	0040	CODE
+
+SP_INT . . . . . . . . . . . . .  	L WORD	0005	CODE
+SS_INT . . . . . . . . . . . . .  	L WORD	0003	CODE
+START  . . . . . . . . . . . . .  	L NEAR	0058	CODE
+START_PROC . . . . . . . . . . .  	L NEAR	002F	CODE
+SUBR_INT . . . . . . . . . . . .  	F PROC	0000	CODE	Length = 007A
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  LB5		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+
+
+    124 Source  Lines
+    124 Total   Lines
+     23 Symbols
+
+  48028 + 459232 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
