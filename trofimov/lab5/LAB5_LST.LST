@@ -1,0 +1,180 @@
+Microsoft (R) Macro Assembler Version 5.10                  12/16/21 07:22:1
+                                                             Page     1-1
+
+
+ 0000				stack SEGMENT stack
+ 0000  0400[				dw 1024 DUP (?)
+	   ????			
+			 ]	
+				
+ 0800				stack ENDS
+				
+ 0000				data      SEGMENT
+ 0000  0000				keep_cs dw 0 ;  сегмент
+ 0002  0000			    keep_ip dw 0 ;  прерывание
+ 0004				data      ENDS
+				
+ 0000				code      SEGMENT
+				    assume cs:code, ds:data, ss:stack
+				
+				
+ 0000				interrupt_func  PROC far
+ 0000  EB 2D 90				jmp start
+ 0003  0000				spec_sp dw 0000h
+ 0005  0000				spec_ss dw 0000h
+ 0007  0028[				SPEC_STACK db 40 DUP(0)
+	   00			
+			 ]	
+				
+				
+ 002F				start:
+ 002F  2E: 89 26 0003 R			mov spec_sp, sp
+ 0034  2E: 8C 16 0005 R			mov spec_ss, ss
+ 0039  BC ---- R			mov sp, SEG SPEC_STACK
+ 003C  8E D4				mov ss, sp
+ 003E  BC 002F R			mov sp, offset start
+ 0041  50				push ax  
+ 0042  51				push cx
+						
+				    ;обработка прерывания
+ 0043  8B C8				mov cx, ax
+ 0045  B0 B6				mov al, 10110110b ; 0B6H
+ 0047  E6 43				out 43h, al 
+ 0049  8B C1				mov ax, cx ; высота звука
+ 004B  E6 42				out 42h, al
+ 004D  8A C4				mov al, ah
+ 004F  E6 42				out 42h, al 
+ 0051  E4 61				in al, 61h ; генерация зву�
+				�а
+ 0053  8A E0				mov ah, al
+ 0055  0C 03				or al, 3
+ 0057  E6 61				out 61h, al
+ 0059  2B C9				sub cx, cx
+ 005B					sound:
+ 005B  90					nop
+ 005C  E2 FD					loop sound ; пока дина�
+				�ик работает
+ 005E  8A C4				mov al, ah
+ 0060  E6 61				out 61h, al ; выключение ди
+Microsoft (R) Macro Assembler Version 5.10                  12/16/21 07:22:1
+                                                             Page     1-2
+
+
+				намика
+				            
+					; восстановление реги
+				стров
+ 0062  59				pop cx
+ 0063  58				pop ax   
+ 0064  2E: 8E 16 0005 R			mov ss, spec_ss
+ 0069  2E: 8B 26 0003 R			mov sp, spec_sp
+ 006E  B0 20				mov al, 20h
+ 0070  E6 20				out 20h, al
+ 0072  CF				iret
+ 0073				interrupt_func  ENDP
+				
+ 0073				Main	PROC  far
+					; текущий вектор прер�
+				�вания
+ 0073  B4 35				mov  ah, 35h;функция получ�
+				�ния вектора
+ 0075  B0 23				mov  al, 23h;номер вектора
+ 0077  CD 21				int  21h
+ 0079  89 1E 0002 R			mov  keep_ip, bx;запоминание
+				 смещения
+ 007D  8C 06 0000 R			mov  keep_cs, es;запоминание
+				 сегмента
+					
+					;установка вектора пр
+				ерывания
+ 0081  1E				push ds
+ 0082  BA 0000 R			mov  dx, offset interrupt_func  
+ 0085  B8 ---- R			mov  ax, seg interrupt_func    
+ 0088  8E D8				mov  ds, ax          
+ 008A  B4 25				mov  ah, 25h         ; функция �
+				�становки вектора
+ 008C  B0 23				mov  al, 23h         ; номер ве�
+				�тора
+ 008E  CD 21				int  21h 
+ 0090  1F				pop  ds
+					
+					;ожидание нажатия ctrl+c
+ 0091					ctrl_c:
+ 0091  B4 00			    	mov ah, 0
+ 0093  CD 16			    	int 16h
+ 0095  3C 03			    	cmp al, 3 
+ 0097  75 F8			    	jne ctrl_c
+					
+ 0099  B8 0BB8				mov ax, 3000 ; частота звук�
+				�
+ 009C  CD 23				int 23h
+					
+				
+					; восстановление изна
+				чального прерывания
+ 009E  FA				cli ; сброс if
+ 009F  1E				push ds
+Microsoft (R) Macro Assembler Version 5.10                  12/16/21 07:22:1
+                                                             Page     1-3
+
+
+ 00A0  8B 16 0002 R			mov  dx, keep_ip
+ 00A4  A1 0000 R			mov  ax, keep_cs
+ 00A7  8E D8				mov  ds, ax
+ 00A9  B4 25				mov  ah, 25h
+ 00AB  B0 23				mov  al, 23h
+ 00AD  CD 21				int  21h ; восстанавливае
+				м вектор
+ 00AF  1F				pop  ds
+ 00B0  FB				sti ; разрешаем аппарат
+				ные прерывания
+					
+ 00B1  B4 4C				mov ah, 4ch                          
+ 00B3  CD 21				int 21h
+ 00B5				Main      ENDP
+ 00B5				code ENDS
+					END Main 
+Microsoft (R) Macro Assembler Version 5.10                  12/16/21 07:22:1
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+CODE . . . . . . . . . . . . . .  	00B5	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	0004	PARA	NONE	
+STACK  . . . . . . . . . . . . .  	0800	PARA	STACK	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+CTRL_C . . . . . . . . . . . . .  	L NEAR	0091	CODE
+
+INTERRUPT_FUNC . . . . . . . . .  	F PROC	0000	CODE	Length = 0073
+
+KEEP_CS  . . . . . . . . . . . .  	L WORD	0000	DATA
+KEEP_IP  . . . . . . . . . . . .  	L WORD	0002	DATA
+
+MAIN . . . . . . . . . . . . . .  	F PROC	0073	CODE	Length = 0042
+
+SOUND  . . . . . . . . . . . . .  	L NEAR	005B	CODE
+SPEC_SP  . . . . . . . . . . . .  	L WORD	0003	CODE
+SPEC_SS  . . . . . . . . . . . .  	L WORD	0005	CODE
+SPEC_STACK . . . . . . . . . . .  	L BYTE	0007	CODE	Length = 0028
+START  . . . . . . . . . . . . .  	L NEAR	002F	CODE
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  LAB5		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+
+
+    103 Source  Lines
+    103 Total   Lines
+     18 Symbols
+
+  47996 + 459261 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
