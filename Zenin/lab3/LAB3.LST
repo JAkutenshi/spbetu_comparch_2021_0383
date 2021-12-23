@@ -1,0 +1,314 @@
+Microsoft (R) Macro Assembler Version 5.10                  11/18/21 07:31:2
+                                                             Page     1-1
+
+
+ 0000				AStack SEGMENT STACK
+ 0000  000C[			    DW 12 DUP(?)
+	   ????			
+			 ]	
+				
+ 0018				AStack ENDS
+				
+				
+ 0000				DATA SEGMENT
+ 0000  0A			    input DB 10, 10 DUP ('$')
+       000A[			
+	   24			
+			 ]	
+				
+ 000B  00			    sign DB 0
+ 000C  00			    len DB 0
+ 000D  00			    temp DB 0
+ 000E  0000			    a DW 0
+ 0010  0000			    b DW 0
+ 0012  0000			    i DW 0
+ 0014  0000			    k DW 0
+ 0016  0000			    res1 DW 0
+ 0018  0000			    res2 DW 0
+ 001A  0000			    res3 DW 0
+ 001C				DATA ENDS
+				
+				
+ 0000				CODE SEGMENT
+				    ASSUME CS:CODE,  DS:DATA, SS:AStack
+				
+				    
+ 0000				     Read PROC NEAR
+				
+ 0000  C6 06 000B R 00		        mov sign, 0             ;sign value ini
+				tializer
+ 0005  C6 06 000C R 00		        mov len, 0              ;number length 
+				value initializer
+ 000A  BF 0002			        mov di, 2               ;number of the 
+				first element in input, itterator
+ 000D  B7 00			        mov bh, 0               ;init
+ 000F  B9 0000			        mov cx, 0
+ 0012  B8 0000			        mov ax, 0
+ 0015  BA 0000 R		        mov dx, OFFSET input    ;wrtiting offse
+				t to input string into dx
+ 0018  B4 0A			        mov ah, 0Ah             ;reading user i
+				nput and writing it to "input" string
+ 001A  CD 21			        int 21h                 ;interruption
+				        
+ 001C  80 BD 0000 R 2D		        cmp input[di], 2Dh      ;comparing firs
+				t symbol of input with dash symbol
+				
+ 0021  BA 0000			        mov dx, 0               ;init
+				        
+ 0024  75 0B			        jnz counting             ;checking a==b
+Microsoft (R) Macro Assembler Version 5.10                  11/18/21 07:31:2
+                                                             Page     1-2
+
+
+				 statement
+ 0026  C6 06 000B R 01		        mov sign, 1             ;if first sybmo
+				l is dash -> sign changes to 1
+ 002B  83 C7 01			        add di, 1               ;proceed to nex
+				t sybol in input
+ 002E  EB 01 90			        jmp counting            ;jumping to cou
+				nting part
+				
+ 0031				        counting:
+ 0031  80 BD 0000 R 24		            cmp input[di], 24h
+ 0036  74 05			            jz processing
+ 0038  83 C7 01			            add di, 1
+ 003B  EB F4			            jmp counting
+				        
+ 003D				        processing:
+ 003D  89 3E 000C R		            mov len, di
+LAB3.ASM(53): warning A4031: Operand types must match
+ 0041  BF 0002			            mov di, 2
+				            
+ 0044  80 3E 000B R 01		            cmp sign, 1
+ 0049  75 03			            jnz skip
+ 004B  83 C7 01			            add di, 1
+ 004E				            skip:
+				
+ 004E  8A 3E 000C R		            mov bh, len
+ 0052  80 EF 04			            sub bh, 4
+ 0055  2A 3E 000B R		            sub bh, sign        ;finding amount
+				 of digits of the absolute number
+ 0059  74 38			            jz finalcalc
+				
+ 005B  EB 01 90			            jmp itter
+				    
+ 005E				        itter:
+ 005E  88 3E 000D R		            mov temp, bh
+ 0062  B8 0000			            mov ax, 0
+ 0065  BA 0000			            mov dx, 0
+ 0068  8A 85 0000 R		            mov al, input[di]
+ 006C  2C 30			            sub al, 30h
+ 006E				        power:
+ 006E  8B D0			            mov dx, ax
+ 0070				        mult10:
+ 0070  D1 E0			            SHL ax, 1
+ 0072  D1 E0			            SHL ax, 1
+ 0074  D1 E0			            SHL ax, 1
+ 0076  03 C2			            add ax, dx
+ 0078  03 C2			            add ax, dx
+ 007A  80 2E 000D R 01		            sub temp, 1
+ 007F  80 3E 000D R 00		            cmp temp, 0
+ 0084  75 E8			            jnz power
+ 0086  03 C8			        add cx, ax
+ 0088  83 C7 01			        add di, 1
+ 008B  80 EF 01			        sub bh, 1
+ 008E  80 FF 00			        cmp bh, 0
+ 0091  75 CB			        jnz itter
+				
+Microsoft (R) Macro Assembler Version 5.10                  11/18/21 07:31:2
+                                                             Page     1-3
+
+
+ 0093				        finalcalc:
+ 0093  B8 0000			        mov ax, 0
+ 0096  8A 85 0000 R		        mov al, input[di]
+ 009A  2C 30			        sub al, 30h
+ 009C  03 C8			        add cx, ax
+				
+ 009E  80 3E 000B R 01		        cmp sign, 1
+ 00A3  75 02			        jnz skip2
+ 00A5  F7 D9			        neg cx
+ 00A7				        skip2:
+				
+ 00A7  BF 0002			        mov di, 2           ;input buffer clear
+ 00AA  BA 000A			        mov dx, 10
+ 00AD				        clear:
+ 00AD  C6 85 0000 R 24		        mov input[di], 24h
+ 00B2  83 C7 01			        add di, 1
+ 00B5  83 EA 01			        sub dx, 1
+ 00B8  75 F3			        jnz clear
+				        
+ 00BA  C3			        ret
+ 00BB				    Read ENDP
+				
+				
+ 00BB				    Main PROC FAR
+ 00BB  1E			        push  DS
+ 00BC  2B C0			        sub   AX,AX
+ 00BE  50			        push  AX
+ 00BF  B8 ---- R		        mov   AX,DATA
+ 00C2  8E D8			        mov   DS,AX
+ 00C4  B9 0000			        mov   CX, 0
+				
+ 00C7  E8 0000 R		        Call Read
+ 00CA  89 0E 000E R		        mov a, cx
+ 00CE  E8 0000 R		        Call Read
+ 00D1  89 0E 0010 R		        mov b, cx
+ 00D5  E8 0000 R		        Call Read
+ 00D8  89 0E 0012 R		        mov i, cx
+ 00DC  E8 0000 R		        Call Read
+ 00DF  89 0E 0014 R		        mov k, cx
+				
+				
+				        
+				        
+ 00E3  A1 000E R		        mov ax, a
+ 00E6  8B 1E 0010 R		        mov bx, b
+ 00EA  3B C3			        cmp ax, bx
+ 00EC  7E 28			        jle less
+				        
+				        
+ 00EE  B8 000F			        mov ax, 15      ;f1.1
+ 00F1  2B 06 0012 R		        sub ax, i       ;
+ 00F5  2B 06 0012 R		        sub ax, i       ;
+ 00F9  A3 0016 R		        mov res1, ax    ;f1.1
+				        
+Microsoft (R) Macro Assembler Version 5.10                  11/18/21 07:31:2
+                                                             Page     1-4
+
+
+ 00FC  A1 0012 R		        mov ax, i       ;f4.1
+ 00FF  D1 E0			        shl ax, 1       ;
+ 0101  D1 E0			        shl ax, 1       ;
+ 0103  03 06 0012 R		        add ax, i       ;
+ 0107  03 06 0012 R		        add ax, i       ;
+ 010B  2D 0004			        sub ax, 4       ;
+ 010E  F7 D8			        neg ax          ;
+ 0110  A3 0018 R		        mov res2, ax    ;f4.1
+				
+ 0113  EB 1F 90			        jmp f3
+				        
+ 0116				        less:
+				
+ 0116  A1 0012 R		        mov ax, i       ;f1.2
+ 0119  D1 E0			        SHL ax, 1       ;
+ 011B  03 06 0012 R		        add ax, i       ;
+ 011F  05 0004			        add ax, 4       ;
+ 0122  A3 0016 R		        mov res1, ax    ;f1.2
+				        
+ 0125  A1 0012 R		        mov ax, i       ;f4.2
+ 0128  05 0002			        add ax, 2       ;
+ 012B  8B D0			        mov dx, ax      ;
+ 012D  D1 E0			        shl ax, 1       ;
+ 012F  03 C2			        add ax, dx      ;
+ 0131  A3 0018 R		        mov res2, ax    ;f4.2
+				
+				        
+ 0134				        f3:
+ 0134  8B 0E 0014 R		        mov cx, k
+ 0138  83 F9 00			        cmp cx, 0
+ 013B  75 12			        jnz f32
+				
+ 013D  8B 0E 0016 R		        mov cx, res1
+ 0141  03 0E 0018 R		        add cx, res2
+ 0145  83 F9 00			        cmp cx, 0
+ 0148  7D 1B			        jnl finale
+				        
+ 014A  F7 D9			        neg cx
+ 014C  EB 17 90			        jmp finale
+				
+ 014F				        f32:
+ 014F  A1 0016 R		        mov ax, res1
+ 0152  8B 1E 0018 R		        mov bx, res2
+ 0156  3B C3			        cmp ax, bx
+ 0158  7E 07			        jle f321
+ 015A  8B 0E 0018 R		        mov cx, res2
+ 015E  EB 05 90			        jmp finale
+				
+ 0161				        f321:
+ 0161  8B 0E 0016 R		        mov cx, res1
+				
+				
+ 0165				        finale:
+ 0165  B4 4C			        mov ah,4Ch
+Microsoft (R) Macro Assembler Version 5.10                  11/18/21 07:31:2
+                                                             Page     1-5
+
+
+ 0167  CD 21			        int 21h
+				
+ 0169				    Main ENDP
+ 0169				    CODE ENDS
+				END Main
+Microsoft (R) Macro Assembler Version 5.10                  11/18/21 07:31:2
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+ASTACK . . . . . . . . . . . . .  	0018	PARA	STACK	
+CODE . . . . . . . . . . . . . .  	0169	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	001C	PARA	NONE	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+A  . . . . . . . . . . . . . . .  	L WORD	000E	DATA
+
+B  . . . . . . . . . . . . . . .  	L WORD	0010	DATA
+
+CLEAR  . . . . . . . . . . . . .  	L NEAR	00AD	CODE
+COUNTING . . . . . . . . . . . .  	L NEAR	0031	CODE
+
+F3 . . . . . . . . . . . . . . .  	L NEAR	0134	CODE
+F32  . . . . . . . . . . . . . .  	L NEAR	014F	CODE
+F321 . . . . . . . . . . . . . .  	L NEAR	0161	CODE
+FINALCALC  . . . . . . . . . . .  	L NEAR	0093	CODE
+FINALE . . . . . . . . . . . . .  	L NEAR	0165	CODE
+
+I  . . . . . . . . . . . . . . .  	L WORD	0012	DATA
+INPUT  . . . . . . . . . . . . .  	L BYTE	0000	DATA
+ITTER  . . . . . . . . . . . . .  	L NEAR	005E	CODE
+
+K  . . . . . . . . . . . . . . .  	L WORD	0014	DATA
+
+LEN  . . . . . . . . . . . . . .  	L BYTE	000C	DATA
+LESS . . . . . . . . . . . . . .  	L NEAR	0116	CODE
+
+MAIN . . . . . . . . . . . . . .  	F PROC	00BB	CODE	Length = 00AE
+MULT10 . . . . . . . . . . . . .  	L NEAR	0070	CODE
+
+POWER  . . . . . . . . . . . . .  	L NEAR	006E	CODE
+PROCESSING . . . . . . . . . . .  	L NEAR	003D	CODE
+
+READ . . . . . . . . . . . . . .  	N PROC	0000	CODE	Length = 00BB
+RES1 . . . . . . . . . . . . . .  	L WORD	0016	DATA
+RES2 . . . . . . . . . . . . . .  	L WORD	0018	DATA
+RES3 . . . . . . . . . . . . . .  	L WORD	001A	DATA
+
+SIGN . . . . . . . . . . . . . .  	L BYTE	000B	DATA
+SKIP . . . . . . . . . . . . . .  	L NEAR	004E	CODE
+SKIP2  . . . . . . . . . . . . .  	L NEAR	00A7	CODE
+
+TEMP . . . . . . . . . . . . . .  	L BYTE	000D	DATA
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  LAB3		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+Microsoft (R) Macro Assembler Version 5.10                  11/18/21 07:31:2
+                                                             Symbols-2
+
+
+
+
+    203 Source  Lines
+    203 Total   Lines
+     35 Symbols
+
+  47886 + 451179 Bytes symbol space free
+
+      1 Warning Errors
+      0 Severe  Errors
