@@ -1,0 +1,208 @@
+Microsoft (R) Macro Assembler Version 5.10                  12/19/21 20:15:2
+                                                             Page     1-1
+
+
+ = 0005				NUM_SYM equ 5 ; кол-во сE�мволов в
+				 сE�роке длсEввода
+				
+				; Стек  программсE
+ 0000				AStack    SEGMENT  STACK
+ 0000  0400[			          DW 1024 DUP(?)  ; ОтводитсE�E
+				1024 сE�ов памяти
+	   ????			
+			 ]	
+				
+ 0800				AStack    ENDS
+				
+				; Данные программсE
+ 0000				DATA      SEGMENT
+ 0000  0000			          KEEP_CS DW 0  ; длсEсE�анени
+				сEсE�гмента
+ 0002  0000			          KEEP_IP DW 0  ; и сE�ещенисE�
+				�рерыванисE
+				          ; возврасEкаретки сEк
+				одом 13 (0Dh), перевод сE�роки 
+				сEкодом 10 (0Ah).
+ 0004  0D 0A			          MES DB 0Dh, 0Ah, NUM_SYM dup("$"), '$
+				'
+       0005[			
+	   24			
+			 ]	
+       24			
+ 000C  0D 0A 46 69 6E 69	          MES_END DB 0Dh, 0Ah, 'Finish', '$'
+       73 68 24			
+ 0015				DATA      ENDS
+				
+				; Код программсE
+ 0000				CODE      SEGMENT
+				          ASSUME CS:CODE, DS:DATA, SS:AStack
+				
+ 0000				SUBR_INT  PROC FAR
+ 0000  50			          PUSH  AX  ; сE�сE�анение из
+				меняемысEрегисE�ров
+ 0001  53			          PUSH  BX
+ 0002  51			          PUSH  CX
+ 0003  52			          PUSH  DX
+				                    
+				          ; дейсE�висEпо обрабо�
+				�ке прерыванисE
+ 0004  B9 0005			          mov  cx, NUM_SYM
+ 0007  BB 0004 R		          mov  bx, offset MES  ; полусE�е
+				м сE�ещение на насE�ло сE�об�
+				�енисE
+ 000A  83 C3 02			          add  bx, 2
+ 000D  B4 01			          mov  ah, 01h   ; ввод сEклав
+				иатурсE
+ 000F				      lp:         
+ 000F  CD 21			          int  21h
+ 0011  88 07			          mov  [bx], al  ; помещаем сE
+Microsoft (R) Macro Assembler Version 5.10                  12/19/21 20:15:2
+                                                             Page     1-2
+
+
+				�мвол в сE�роксE
+ 0013  43			          inc  bx
+ 0014  E2 F9			          loop  lp
+				                
+				          ; вывод сE�рок (сE�обще
+				ний)
+ 0016  B4 09			          mov  ah, 09h
+ 0018  BA 0004 R		          mov  dx, offset MES
+ 001B  CD 21			          int  21h
+ 001D  BA 000C R		          mov  dx, offset MES_END
+ 0020  CD 21			          int  21h
+				          
+ 0022  58			          POP  AX   ; восE�E�ановлен�
+				�е регисE�ров
+ 0023  5B			          POP  BX
+ 0024  59			          POP  CX   
+ 0025  5A			          POP  DX   
+ 0026  B0 20			          MOV  AL, 20H  ; длсEразреше
+				нисEобрабоки прерываний
+ 0028  E6 20			          OUT  20H,AL  ; сEболее низк
+				ими уровнями, сE�м только сE
+				то обработанное
+ 002A  CF			          IRET
+ 002B				SUBR_INT  ENDP
+				
+				; ГоловнасEпросE�дура
+ 002B				Main            PROC  FAR
+ 002B  1E			          push  DS       ;\  СосE�анени
+				е адресE� насE�ла PSP в сE�еке
+ 002C  2B C0			          sub   AX,AX    ; > длсEпосE�е�
+				�ующего восE�E�ановленисEпо
+ 002E  50			          push  AX       ;/  команде ret
+				, завершающей просE�дурсE
+ 002F  B8 ---- R		          mov   AX,DATA   ; Загрузка сE
+				егментного
+ 0032  8E D8			          mov   DS,AX     ; регисE�ра д
+				аннысE
+				          
+				          ; Запоминание текуще
+				го вектора прерыванисE
+ 0034  B4 35			          MOV  AH, 35H   ; сE�нксE�сEпо�
+				�усE�нисEвектора
+ 0036  B0 23			          MOV  AL, 23H   ; номер вект�
+				�ра
+ 0038  CD 21			          INT  21H
+ 003A  89 1E 0002 R		          MOV  KEEP_IP, BX  ; запомина�
+				�ие сE�ещенисE
+ 003E  8C 06 0000 R		          MOV  KEEP_CS, ES  ; и сE�гменсE
+				а
+				          
+				          ; УсE�ановка вектора �
+				�рерыванисE
+ 0042  1E			          PUSH DS
+ 0043  BA 0000 R		          MOV  DX, OFFSET SUBR_INT ; сE�еще
+Microsoft (R) Macro Assembler Version 5.10                  12/19/21 20:15:2
+                                                             Page     1-3
+
+
+				ние длсEпросE�дурсEв DX
+ 0046  B8 ---- R		          MOV  AX, SEG SUBR_INT    ; сE�гме
+				нсEпросE�дурсE
+ 0049  8E D8			          MOV  DS, AX          ; помещае
+				м в DS
+ 004B  B4 25			          MOV  AH, 25H         ; сE�нксE�сE
+				 усE�ановки вектора
+ 004D  B0 23			          MOV  AL, 23H         ; номер в�
+				�ктора
+ 004F  CD 21			          INT  21H             ; меняем �
+				�рерывание
+ 0051  1F			          POP  DS
+				          
+				          ;ожидание нажатисEctrl
+				_c
+ 0052				          ctrl_c:  
+ 0052  B4 00			                mov ah, 0
+ 0054  CD 16			                int 16h ;КлавиатурнсE
+				й ввод (сE�ение клависE
+ 0056  3C 03			                cmp al, 3
+ 0058  75 F8			                jne ctrl_c
+				          
+ 005A  CD 23			          int 23h
+				          
+				          ; ВосE�E�ановление изн
+				асE�льного вектора прерыв�
+				�нисE
+ 005C  FA			          CLI
+ 005D  1E			          PUSH DS
+ 005E  8B 16 0002 R		          MOV  DX, KEEP_IP
+ 0062  A1 0000 R		          MOV  AX, KEEP_CS
+ 0065  8E D8			          MOV  DS, AX
+ 0067  B4 25			          MOV  AH, 25H
+ 0069  B0 23			          MOV  AL, 23H
+ 006B  CD 21			          INT  21H          ; восE�E�ана�
+				�ливаем вектор
+ 006D  1F			          POP  DS
+ 006E  FB			          STI
+				          
+ 006F  CB			          RET
+				
+ 0070				Main      ENDP
+ 0070				CODE      ENDS
+				          END Main
+Microsoft (R) Macro Assembler Version 5.10                  12/19/21 20:15:2
+                                                             Symbols-1
+
+
+Segments and Groups:
+
+                N a m e         	Length	 Align	Combine Class
+
+ASTACK . . . . . . . . . . . . .  	0800	PARA	STACK	
+CODE . . . . . . . . . . . . . .  	0070	PARA	NONE	
+DATA . . . . . . . . . . . . . .  	0015	PARA	NONE	
+
+Symbols:            
+
+                N a m e         	Type	 Value	 Attr
+
+CTRL_C . . . . . . . . . . . . .  	L NEAR	0052	CODE
+
+KEEP_CS  . . . . . . . . . . . .  	L WORD	0000	DATA
+KEEP_IP  . . . . . . . . . . . .  	L WORD	0002	DATA
+
+LP . . . . . . . . . . . . . . .  	L NEAR	000F	CODE
+
+MAIN . . . . . . . . . . . . . .  	F PROC	002B	CODE	Length = 0045
+MES  . . . . . . . . . . . . . .  	L BYTE	0004	DATA
+MES_END  . . . . . . . . . . . .  	L BYTE	000C	DATA
+
+NUM_SYM  . . . . . . . . . . . .  	NUMBER	0005	
+
+SUBR_INT . . . . . . . . . . . .  	F PROC	0000	CODE	Length = 002B
+
+@CPU . . . . . . . . . . . . . .  	TEXT  0101h		
+@FILENAME  . . . . . . . . . . .  	TEXT  LAB5		
+@VERSION . . . . . . . . . . . .  	TEXT  510		
+
+
+    104 Source  Lines
+    104 Total   Lines
+     17 Symbols
+
+  48016 + 455147 Bytes symbol space free
+
+      0 Warning Errors
+      0 Severe  Errors
